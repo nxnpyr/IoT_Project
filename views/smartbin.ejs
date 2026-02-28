@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Rice Bin - Dashboard</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <div id="loginSection" class="container" style="display: flex; height: 90vh; align-items: center;">
+        <div class="card login-card p-5 mx-auto shadow-sm" style="max-width: 400px; width: 100%; border-radius: 30px;">
+            <div class="text-center mb-4">
+                <i class="fas fa-leaf fa-3x mb-3" style="color: #5F8D5E;"></i>
+                <h4 class="fw-bold">SMART RICE BIN</h4>
+                <p class="text-muted small">ระบบจัดการถังข้าวอัจฉริยะ</p>
+            </div>
+            
+            <div class="mb-3">
+                <label class="small text-muted">อีเมลผู้ใช้งาน</label>
+                <input type="email" id="loginEmail" class="form-control border-0 bg-light p-3" style="border-radius: 15px;" placeholder="example@mail.com">
+            </div>
+            <div class="mb-3">
+                <label class="small text-muted">รหัสผ่าน</label>
+                <input type="password" id="loginPass" class="form-control border-0 bg-light p-3" style="border-radius: 15px;" placeholder="••••••••">
+            </div>
+
+            <div class="text-end mb-3">
+                <a href="/forgot-password" class="text-muted small text-decoration-none">ลืมรหัสผ่าน?</a>
+            </div>
+
+            <button onclick="handleLogin()" class="btn btn-success w-100 p-3 shadow-sm" style="border-radius: 15px; background-color: #5F8D5E; border: none; font-weight: 500;">
+                เข้าสู่ระบบ
+            </button>
+
+            <div class="text-center mt-4">
+                <a href="/register" class="text-muted small text-decoration-none">ยังไม่มีบัญชี? ลงทะเบียนที่นี่</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboardSection" class="container py-5" style="display: none;">
+        
+        <div class="header-nav d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <a href="/smartbin" class="brand-link">
+                    <h2 class="fw-bold m-0 text-uppercase">Smart Rice Bin</h2>
+                </a>
+                <p class="text-muted m-0">สวัสดีคุณ <span id="displayUserName" class="fw-bold"></span></p>
+                <small class="text-muted">Serial ID: <span id="displaySerial"></span></small>
+            </div>
+            
+            <div class="menu-group d-flex gap-2">
+                <button onclick="toggleDarkMode()" class="btn-menu shadow-sm" id="themeBtn">Dark Mode</button>
+                <a href="/reports" class="btn-menu shadow-sm text-decoration-none">รายงานสถิติ</a>
+                <button onclick="logout()" class="btn-menu shadow-sm text-danger border-0">ออกจากระบบ</button>
+            </div>
+        </div>
+
+        <div class="row g-4 text-center">
+            
+            <div class="col-md-12">
+                <div class="stat-card p-4">
+                    <h6 class="fw-bold mb-3 text-start"><i class="fas fa-utensils me-2"></i>ระบบจ่ายข้าวอัจฉริยะ</h6>
+                    <div class="d-flex gap-2">
+                        <button onclick="dispenseRice(10)" class="btn-menu flex-fill justify-content-center py-3 border-0">10 วินาที</button>
+                        <button onclick="dispenseRice(20)" class="btn-menu flex-fill justify-content-center py-3 border-0">20 วินาที</button>
+                        <button onclick="dispenseRice(30)" class="btn-menu flex-fill justify-content-center py-3 border-0">30 วินาที</button>
+                    </div>
+                    <p id="dispenseStatus" class="small text-muted mt-3 mb-0">สถานะ: พร้อมทำงาน</p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="stat-card p-4">
+                    <div class="text-muted small text-uppercase">วันที่เติมข้าวล่าสุด</div>
+                    <div id="lastRefillDate" class="sensor-value" style="font-size: 1.5rem;">--/--/--</div>
+                    <button onclick="updateRefillDate()" class="btn btn-sm btn-outline-success mt-2 border-0 shadow-sm p-2 w-100" style="border-radius: 10px;">บันทึกการเติมข้าววันนี้</button>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="stat-card p-4">
+                    <div class="text-muted small text-uppercase">อุณหภูมิปัจจุบัน</div>
+                    <div id="tempText" class="sensor-value">-- °C</div>
+                    <div id="tempTime" class="time-label">--:--:--</div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="stat-card p-4" id="humCard">
+                    <div class="text-muted small text-uppercase">ความชื้นปัจจุบัน</div>
+                    <div id="humText" class="sensor-value text-info">-- %</div>
+                    <div id="humStatusMsg" class="small fw-bold mt-1"></div>
+                    <div id="humTime" class="time-label">--:--:--</div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="stat-card p-4 d-flex flex-column justify-content-center">
+                    <div class="text-muted small text-uppercase mb-3">ระบบระบายอากาศ</div>
+                    <button id="fanBtn" onclick="toggleFan()" class="btn-menu w-100 py-3 justify-content-center border-0 shadow-sm">
+                        กำลังโหลด...
+                    </button>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <div class="stat-card p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h6 class="fw-bold m-0">ข้อมูลวิเคราะห์แบบเรียลไทม์</h6>
+                        <span class="badge bg-light text-success fw-normal border">● Live Data</span>
+                    </div>
+                    <div class="chart-container" style="position: relative; height: 350px;">
+                        <canvas id="myChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+    // --- 1. Firebase Config ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyCzVD8KRML-BNyvmqGMlyFmFxpg-VU0pqo",
+        authDomain: "iot-a8afd.firebaseapp.com",
+        databaseURL: "https://iot-a8afd-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "iot-a8afd",
+        storageBucket: "iot-a8afd.firebasestorage.app",
+        messagingSenderId: "895547899276",
+        appId: "1:895547899276:web:17131cbcc67a1de256eaa9"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let myChart;
+    const maxDataPoints = 15;
+
+    // --- 2. Page Initialization ---
+    window.onload = function() {
+        const theme = localStorage.getItem("theme") || "light";
+        document.documentElement.setAttribute("data-theme", theme);
+        updateThemeBtn(theme);
+
+        const savedEmail = localStorage.getItem("bin_user_email");
+        const isLoggedIn = localStorage.getItem("is_logged_in");
+
+        if (savedEmail) document.getElementById("loginEmail").value = savedEmail;
+
+        if (isLoggedIn === "true" && savedEmail) {
+            db.ref('Users').orderByChild('email').equalTo(savedEmail).once("value").then(snap => {
+                if (snap.exists()) {
+                    const userData = Object.values(snap.val())[0];
+                    showDashboard(userData.name, userData.serial);
+                }
+            });
+        }
+    };
+
+    // --- 3. Dashboard Logic ---
+
+    // ฟังก์ชันจ่ายข้าว
+    function dispenseRice(seconds) {
+        if(!confirm(`ยืนยันการจ่ายข้าวเป็นเวลา ${seconds} วินาที?`)) return;
+        
+        const statusMsg = document.getElementById("dispenseStatus");
+        statusMsg.innerText = `สถานะ: กำลังจ่ายข้าว (${seconds} วิ)...`;
+        statusMsg.style.color = "var(--primary-green)";
+
+        db.ref("Control/dispense").set({
+            status: "ON",
+            duration: seconds,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+            setTimeout(() => {
+                statusMsg.innerText = "สถานะ: จ่ายข้าวเสร็จสิ้น";
+                statusMsg.style.color = "var(--text-muted)";
+                db.ref("Control/dispense").update({ status: "OFF" });
+            }, seconds * 1000);
+        });
+    }
+
+    // ฟังก์ชันจัดการวันเติมข้าว
+    function updateRefillDate() {
+        const today = new Date().toLocaleDateString('th-TH');
+        db.ref("Current/lastRefill").set(today).then(() => alert("บันทึกวันเติมข้าวเรียบร้อย"));
+    }
+
+    // ฟังก์ชันเช็คสถานะความชื้น (อัจฉริยะ)
+    function monitorHumidity(val) {
+        const humText = document.getElementById("humText");
+        const statusMsg = document.getElementById("humStatusMsg");
+        const getTime = () => new Date().toLocaleTimeString('th-TH');
+
+        humText.innerText = val + " %";
+        document.getElementById("humTime").innerText = "อัปเดต: " + getTime();
+
+        if (val > 70) {
+            humText.style.color = "#e53e3e"; // สีแดง
+            statusMsg.innerText = "⚠️ ความชื้นสูง! แนะนำเปิดพัดลม";
+            statusMsg.style.color = "#e53e3e";
+        } else {
+            humText.style.color = "#5F8D5E"; // สีเขียวปกติ
+            statusMsg.innerText = "✅ ความชื้นปกติ";
+            statusMsg.style.color = "#5F8D5E";
+        }
+    }
+
+    // --- 4. Monitoring & Data Sync ---
+    function startMonitoring() {
+        const getTime = () => new Date().toLocaleTimeString('th-TH');
+
+        // ติดตามอุณหภูมิ
+        db.ref("Current/temp").on("value", (snap) => {
+            const val = snap.val();
+            document.getElementById("tempText").innerText = (val || "--") + " °C";
+            document.getElementById("tempTime").innerText = "อัปเดต: " + getTime();
+            if (val) updateChartData(getTime(), val, null);
+        });
+
+        // ติดตามความชื้น
+        db.ref("Current/hum").on("value", (snap) => {
+            const val = snap.val();
+            if (val !== null) monitorHumidity(val);
+            if (val) updateChartData(getTime(), null, val);
+        });
+
+        // ติดตามวันเติมข้าว
+        db.ref("Current/lastRefill").on("value", (snap) => {
+            if (snap.exists()) document.getElementById("lastRefillDate").innerText = snap.val();
+        });
+
+        // ติดตามพัดลม
+        db.ref("Control/Fan").on("value", (snap) => {
+            const status = snap.val();
+            const btn = document.getElementById("fanBtn");
+            btn.innerText = status === "ON" ? "พัดลม: เปิด" : "พัดลม: ปิด";
+            btn.className = status === "ON" ? "btn-menu w-100 py-3 bg-success text-white border-0 shadow-sm" : "btn-menu w-100 py-3 border-0 shadow-sm";
+        });
+    }
+
+    // --- 5. UI & Theme Logic ---
+    function toggleDarkMode() {
+        const current = document.documentElement.getAttribute("data-theme");
+        const target = current === "dark" ? "light" : "dark";
+        document.documentElement.setAttribute("data-theme", target);
+        localStorage.setItem("theme", target);
+        updateThemeBtn(target);
+        if (myChart) refreshChartTheme();
+    }
+
+    function refreshChartTheme() {
+        const newTextColor = getComputedStyle(document.body).getPropertyValue('--text-main').trim();
+        const newGridColor = getComputedStyle(document.body).getPropertyValue('--border-color').trim();
+        myChart.options.scales.x.grid.color = newGridColor;
+        myChart.options.scales.x.ticks.color = newTextColor;
+        myChart.options.scales.y.grid.color = newGridColor;
+        myChart.options.scales.y.ticks.color = newTextColor;
+        myChart.options.plugins.legend.labels.color = newTextColor;
+        myChart.update();
+    }
+
+    function updateThemeBtn(theme) {
+        const btn = document.getElementById("themeBtn");
+        if (btn) btn.innerText = theme === "dark" ? "Light Mode" : "Dark Mode";
+    }
+
+    function showDashboard(name, serial) {
+        document.getElementById("loginSection").style.display = "none";
+        document.getElementById("dashboardSection").style.display = "block";
+        document.getElementById("displayUserName").innerText = name;
+        document.getElementById("displaySerial").innerText = serial;
+        initChart();
+        startMonitoring();
+    }
+
+    function handleLogin() {
+        const email = document.getElementById("loginEmail").value;
+        const pass = document.getElementById("loginPass").value;
+        if (!email || !pass) return alert("กรุณาระบุข้อมูลให้ครบ");
+
+        db.ref('Users').orderByChild('email').equalTo(email).once("value").then((snapshot) => {
+            if (snapshot.exists()) {
+                const key = Object.keys(snapshot.val())[0];
+                const userData = snapshot.val()[key];
+                if (userData.password === pass) {
+                    if (userData.isVerified === false) {
+                        alert("กรุณายืนยัน OTP ก่อนเข้าใช้งาน");
+                        localStorage.setItem("pending_verify_id", key);
+                        return window.location.href = "/verify-email";
+                    }
+                    localStorage.setItem("bin_user_email", email);
+                    localStorage.setItem("is_logged_in", "true");
+                    showDashboard(userData.name, userData.serial);
+                } else { alert("รหัสผ่านไม่ถูกต้อง"); }
+            } else { alert("ไม่พบอีเมลนี้ในระบบ"); }
+        });
+    }
+
+    function logout() {
+        if (confirm("ยืนยันการออกจากระบบ?")) {
+            localStorage.setItem("is_logged_in", "false");
+            location.reload();
+        }
+    }
+
+    function toggleFan() {
+        const fanRef = db.ref("Control/Fan");
+        fanRef.once("value").then(snap => {
+            fanRef.set(snap.val() === "ON" ? "OFF" : "ON");
+        });
+    }
+
+    function initChart() {
+        const ctx = document.getElementById('myChart').getContext('2d');
+        const textColor = getComputedStyle(document.body).getPropertyValue('--text-main').trim();
+        const gridColor = getComputedStyle(document.body).getPropertyValue('--border-color').trim();
+
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    { label: 'อุณหภูมิ (°C)', data: [], borderColor: '#e5989b', tension: 0.3, fill: false },
+                    { label: 'ความชื้น (%)', data: [], borderColor: '#7fb3d5', tension: 0.3, fill: false }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { color: gridColor }, ticks: { color: textColor } },
+                    y: { grid: { color: gridColor }, ticks: { color: textColor } }
+                },
+                plugins: {
+                    legend: { labels: { color: textColor, font: { family: 'Kanit' } } }
+                }
+            }
+        });
+    }
+
+    function updateChartData(time, temp, hum) {
+        if (!myChart) return;
+        if (!myChart.data.labels.includes(time)) myChart.data.labels.push(time);
+        if (temp) myChart.data.datasets[0].data.push(temp);
+        if (hum) myChart.data.datasets[1].data.push(hum);
+        if (myChart.data.labels.length > maxDataPoints) {
+            myChart.data.labels.shift();
+            myChart.data.datasets[0].data.shift();
+            myChart.data.datasets[1].data.shift();
+        }
+        myChart.update('none');
+    }
+    </script>
+</body>
+</html>

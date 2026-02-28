@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - Smart Rice Bin</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="header-nav d-flex justify-content-between align-items-center mb-5">
+            <div>
+                <a href="/smartbin" class="brand-link">
+                    <h2 class="fw-bold m-0 text-uppercase">Smart Rice Bin</h2>
+                </a>
+                <p class="text-muted m-0 small">รายงานสถิติและประวัติย้อนหลัง</p>
+            </div>
+            <div class="menu-group">
+                <a href="/smartbin" class="btn-menu shadow-sm text-decoration-none">
+                    <i class="fas fa-arrow-left me-1"></i> กลับหน้า Dashboard
+                </a>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="stat-card p-4 text-center">
+                    <div class="sensor-label text-uppercase">อุณหภูมิปัจจุบัน</div>
+                    <div id="tempText" class="sensor-value">-- °C</div>
+                    <div id="tempTime" class="time-label">--:--:--</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card p-4 text-center">
+                    <div class="sensor-label text-uppercase">อุณหภูมิเฉลี่ย (ล่าสุด)</div>
+                    <div id="avgTemp" class="sensor-value">-- °C</div>
+                    <div class="time-label">คำนวณจาก 20 รายการล่าสุด</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card p-4 text-center">
+                    <div class="sensor-label text-uppercase">ความชื้นเฉลี่ย (ล่าสุด)</div>
+                    <div id="avgHum" class="sensor-value text-info">-- %</div>
+                    <div class="time-label">คำนวณจาก 20 รายการล่าสุด</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="stat-card p-4">
+                    <h6 class="fw-bold mb-4"><i class="fas fa-history me-2"></i>กราฟแสดงแนวโน้มย้อนหลัง</h6>
+                    <div class="chart-container" style="position: relative; height: 400px;">
+                        <canvas id="historyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="stat-card p-4">
+                    <h6 class="fw-bold mb-4">
+                        <i class="fas fa-table me-2 text-success"></i> ตารางบันทึกข้อมูลย้อนหลัง
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table custom-table">
+                            <thead>
+                                <tr>
+                                    <th>วัน-เวลา</th>
+                                    <th>อุณหภูมิ (°C)</th>
+                                    <th>ความชื้น (%)</th>
+                                    <th class="text-center">สถานะพัดลม</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        // 1. Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyCzVD8KRML-BNyvmqGMlyFmFxpg-VU0pqo",
+            authDomain: "iot-a8afd.firebaseapp.com",
+            databaseURL: "https://iot-a8afd-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "iot-a8afd",
+            storageBucket: "iot-a8afd.firebasestorage.app",
+            messagingSenderId: "895547899276",
+            appId: "1:895547899276:web:17131cbcc67a1de256eaa9"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        window.onload = function() {
+            const savedTheme = localStorage.getItem("theme") || "light";
+            document.documentElement.setAttribute("data-theme", savedTheme);
+            loadHistory();
+            startLiveUpdate();
+        };
+
+        // 2. ฟังก์ชันอัปเดตค่าปัจจุบันแบบสด
+        function startLiveUpdate() {
+            const getTime = () => new Date().toLocaleTimeString('th-TH');
+            db.ref("Current/temp").on("value", (snap) => {
+                const val = snap.val();
+                if (val !== null) {
+                    document.getElementById("tempText").innerText = val + " °C";
+                    document.getElementById("tempTime").innerText = "อัปเดต: " + getTime();
+                }
+            });
+        }
+
+        // 3. ฟังก์ชันดึงประวัติมาแสดงผล (จุดที่คุณต้องการแก้ไข)
+        function loadHistory() {
+            db.ref("History").limitToLast(20).once("value").then(snap => {
+                const data = snap.val();
+                const tableBody = document.getElementById("historyTableBody");
+                
+                if (!data) {
+                    tableBody.innerHTML = '<tr><td colspan="4" class="no-data-cell">ไม่พบข้อมูลประวัติในระบบ</td></tr>';
+                    return;
+                }
+
+                const labels = [];
+                const temps = [];
+                const hums = [];
+                let tableHtml = "";
+
+                Object.keys(data).reverse().forEach(key => {
+                    const item = data[key];
+                    labels.unshift(item.time || key);
+                    temps.unshift(Number(item.temp));
+                    hums.unshift(Number(item.hum));
+
+                    // สร้าง Badge สถานะพัดลมแบบ Soft Color ตามที่คุณต้องการ
+                    const fanStatus = item.fan === 'ON' ? 
+                        '<span class="badge rounded-pill bg-success-soft text-success">ทำงาน</span>' : 
+                        '<span class="badge rounded-pill bg-secondary-soft text-muted">ปิด</span>';
+
+                    tableHtml += `
+                        <tr>
+                            <td class="text-muted small">${item.date || ""} ${item.time || key}</td>
+                            <td class="fw-bold" style="color: var(--primary-green)">${item.temp} °C</td>
+                            <td class="fw-bold text-info">${item.hum} %</td>
+                            <td class="text-center">${fanStatus}</td>
+                        </tr>
+                    `;
+                });
+
+                tableBody.innerHTML = tableHtml;
+                renderHistoryChart(labels, temps, hums);
+                
+                // คำนวณค่าเฉลี่ย
+                const avgT = (temps.reduce((a, b) => a + b, 0) / temps.length).toFixed(1);
+                const avgH = (hums.reduce((a, b) => a + b, 0) / hums.length).toFixed(1);
+                document.getElementById("avgTemp").innerText = avgT + " °C";
+                document.getElementById("avgHum").innerText = avgH + " %";
+            });
+        }
+
+        // 4. ฟังก์ชันจัดการกราฟ
+        function renderHistoryChart(labels, temps, hums) {
+            const ctx = document.getElementById('historyChart').getContext('2d');
+            const textColor = getComputedStyle(document.body).getPropertyValue('--text-main').trim();
+            const gridColor = getComputedStyle(document.body).getPropertyValue('--border-color').trim();
+
+            if (window.myHistoryChart) window.myHistoryChart.destroy();
+
+            window.myHistoryChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'อุณหภูมิ (°C)', data: temps, borderColor: '#e5989b', backgroundColor: 'rgba(229, 152, 155, 0.1)', fill: true, tension: 0.3 },
+                        { label: 'ความชื้น (%)', data: hums, borderColor: '#7fb3d5', backgroundColor: 'rgba(127, 179, 213, 0.1)', fill: true, tension: 0.3 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { labels: { color: textColor, font: { family: 'Kanit' } } } 
+                    },
+                    scales: {
+                        y: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: 'Kanit' } } },
+                        x: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: 'Kanit' } } }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP - Smart Rice Bin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        /* สไตล์เฉพาะสำหรับช่อง OTP แบบ Modern */
+        .otp-input-group { display: flex; gap: 10px; justify-content: center; }
+        .otp-field {
+            width: 45px; height: 55px; text-align: center; font-size: 1.5rem;
+            font-weight: bold; border-radius: 12px; border: 2px solid var(--border-color);
+            background: var(--input-bg); color: var(--text-main); transition: 0.3s;
+        }
+        .otp-field:focus { 
+            border-color: var(--primary-green); 
+            outline: none; 
+            transform: scale(1.08);
+            box-shadow: 0 0 10px rgba(124, 166, 130, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="display: flex; height: 90vh; align-items: center;">
+        <div class="card p-5 mx-auto shadow-sm text-center" style="max-width: 420px; border-radius: 30px; background: var(--card-bg);">
+            <div class="mb-4">
+                <div class="icon-circle mx-auto mb-3" style="width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--input-bg); color: var(--primary-green);">
+                    <i class="fas fa-shield-alt fa-2x"></i>
+                </div>
+                <h4 class="fw-bold" style="color: var(--text-main);">ยืนยันรหัส OTP</h4>
+                <p class="text-muted small">กรอกรหัส 6 หลักที่ส่งไปยังอีเมลของคุณ</p>
+            </div>
+
+            <div class="otp-input-group mb-4">
+                <input type="text" class="otp-field" maxlength="1" inputmode="numeric">
+                <input type="text" class="otp-field" maxlength="1" inputmode="numeric">
+                <input type="text" class="otp-field" maxlength="1" inputmode="numeric">
+                <input type="text" class="otp-field" maxlength="1" inputmode="numeric">
+                <input type="text" class="otp-field" maxlength="1" inputmode="numeric">
+                <input type="text" class="otp-field" maxlength="1" inputmode="numeric">
+            </div>
+
+            <button onclick="verifyOTP()" id="verifyBtn" class="btn btn-success w-100 p-3 mb-3" style="border-radius: 15px; font-weight: 500; background-color: var(--primary-green); border: none;">
+                ยืนยันตัวตน
+            </button>
+            
+            <p class="small text-muted">ไม่ได้รับรหัส? <a href="#" onclick="location.reload()" class="text-success text-decoration-none">ส่งรหัสอีกครั้ง</a></p>
+            <a href="/register" class="btn btn-link btn-sm text-muted text-decoration-none mt-2">ย้อนกลับไปลงทะเบียน</a>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script>
+        // ใช้ชุด Config เดียวกับหน้า Login/Register
+        const firebaseConfig = {
+            apiKey: "AIzaSyCzVD8KRML-BNyvmqGMlyFmFxpg-VU0pqo",
+            authDomain: "iot-a8afd.firebaseapp.com",
+            databaseURL: "https://iot-a8afd-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "iot-a8afd",
+            storageBucket: "iot-a8afd.firebasestorage.app",
+            messagingSenderId: "895547899276",
+            appId: "1:895547899276:web:17131cbcc67a1de256eaa9"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // โหลดธีมที่บันทึกไว้
+        const savedTheme = localStorage.getItem("theme") || "light";
+        document.documentElement.setAttribute("data-theme", savedTheme);
+
+        // ระบบเลื่อนช่องอัตโนมัติ (Auto-focus)
+        const inputs = document.querySelectorAll('.otp-field');
+        inputs.forEach((input, index) => {
+            input.addEventListener('keyup', (e) => {
+                if (e.key >= 0 && e.key <= 9) {
+                    if (index < inputs.length - 1) inputs[index + 1].focus();
+                } else if (e.key === 'Backspace') {
+                    if (index > 0) inputs[index - 1].focus();
+                }
+            });
+        });
+
+        function verifyOTP() {
+            const userId = localStorage.getItem("pending_verify_id");
+            if (!userId) return alert("เซสชันหมดอายุ กรุณาลงทะเบียนใหม่");
+
+            let otpValue = "";
+            inputs.forEach(input => otpValue += input.value);
+
+            if(otpValue.length < 6) return alert("กรุณากรอกรหัสให้ครบ 6 หลัก");
+
+            db.ref(`Users/${userId}`).once("value").then(snap => {
+                const data = snap.val();
+                if(data && data.otp === otpValue) {
+                    // ยืนยันสำเร็จ: อัปเดตสถานะและลบรหัส OTP เพื่อความปลอดภัย
+                    db.ref(`Users/${userId}`).update({ isVerified: true, otp: null }).then(() => {
+                        alert("ยืนยันตัวตนสำเร็จ!");
+                        window.location.href = "/smartbin";
+                    });
+                } else {
+                    alert("รหัส OTP ไม่ถูกต้อง");
+                }
+            }).catch(err => {
+                console.error("Error:", err);
+                alert("เกิดข้อผิดพลาดในการเชื่อมต่อ");
+            });
+        }
+    </script>
+</body>
+</html>

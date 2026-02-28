@@ -1,0 +1,316 @@
+/* ================================================================
+   PROJECT: SMART RICE BIN (ถังข้าวอัจฉริยะ) - Version แก้ไขตัวหนังสือจม
+================================================================ */
+
+/* --- 1. การตั้งค่าฟอนต์ --- */
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@200;300;400;500&display=swap');
+
+/* --- 2. ตัวแปรสีพื้นฐาน (Variables) --- */
+:root {
+    --bg-color: #F8FAF6;
+    --card-bg: #FFFFFF;
+    --text-main: #2D3748;   /* สีเข้มสำหรับ Light Mode */
+    --text-muted: #718096;
+    --primary-green: #5F8D5E;
+    --border-color: #EDF2F7;
+    --input-bg: #F1F5F9;
+}
+
+/* --- 3. การตั้งค่าธีมมืด (Dark Mode) --- */
+[data-theme="dark"] {
+    --bg-color: #121212;
+    --card-bg: #1E1E1E;
+    --text-main: #F8FAFC;   /* สีขาวนวลสำหรับ Dark Mode */
+    --text-muted: #A0AEC0;  /* สีเทาสว่างเพื่อให้เห็นหัวข้อชัดขึ้น */
+    --primary-green: #A7C080;
+    --border-color: #333333;
+    --input-bg: #2D3748;
+}
+
+/* --- 4. โครงสร้างพื้นฐาน --- */
+body {
+    background-color: var(--bg-color);
+    font-family: 'Kanit', sans-serif;
+    color: var(--text-main);
+    margin: 0;
+    padding: 0;
+    transition: background 0.3s ease, color 0.3s ease;
+    min-height: 100vh;
+}
+
+/* --- 5. การ์ดแสดงผล --- */
+.login-card, .stat-card {
+    background: var(--card-bg);
+    border-radius: 24px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+    padding: 2rem;
+    transition: transform 0.2s ease;
+}
+
+/* --- 6. ช่องกรอกข้อมูล --- */
+.form-control {
+    background-color: var(--input-bg) !important;
+    color: var(--text-main) !important;
+    border: 1px solid transparent !important;
+    border-radius: 12px !important;
+    transition: 0.2s;
+}
+
+.form-control::placeholder {
+    color: var(--text-muted);
+}
+
+.form-control:focus {
+    border-color: var(--primary-green) !important;
+    box-shadow: none !important;
+    outline: none;
+}
+
+/* --- 7. ปุ่มและเมนู --- */
+.btn-menu {
+    background-color: var(--card-bg);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    padding: 10px 20px;
+    border-radius: 14px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-menu:hover {
+    border-color: var(--primary-green);
+    color: var(--primary-green);
+    transform: translateY(-2px);
+}
+
+.btn-dark {
+    background-color: var(--primary-green) !important;
+    border: none !important;
+    border-radius: 14px !important;
+    font-weight: 500;
+}
+
+.btn-menu:active, .btn-dark:active {
+    transform: scale(0.95);
+}
+
+/* --- 8. ข้อมูลเซนเซอร์ (Sensor Display) --- */
+/* แก้ไข: หัวข้อภายในการ์ด (เช่น อุณหภูมิปัจจุบัน) */
+.sensor-label, 
+.stat-card small,
+.stat-card .text-muted {
+    color: var(--text-muted) !important;
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.sensor-value {
+    color: var(--primary-green) !important;
+    font-size: 3rem;
+    font-weight: 500;
+    margin: 10px 0;
+}
+
+.time-label {
+    font-size: 0.75rem;
+    color: var(--text-muted) !important;
+}
+
+/* สีเฉพาะส่วนความชื้น (Info) */
+.text-info {
+    color: #7fb3d5 !important;
+}
+[data-theme="dark"] .text-info {
+    color: #90caf9 !important;
+}
+
+/* --- 9. ส่วนหัวและชื่อผู้ใช้ (Header Navigation) --- */
+/* แก้ไข: บังคับสีให้ชัดใน Dark Mode */
+.header-nav p, 
+.header-nav p span,
+.header-nav small,
+#displayUserName,
+#displaySerial {
+    color: var(--text-main) !important;
+    transition: color 0.3s ease;
+}
+
+.brand-link {
+    text-decoration: none;
+    color: var(--text-main);
+}
+
+.header-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 30px;
+}
+
+/* --- 10. พื้นที่แสดงกราฟและตาราง --- */
+.chart-container {
+    position: relative;
+    height: 350px;
+    width: 100%;
+}
+
+.table {
+    color: var(--text-main) !important;
+}
+
+.table thead th {
+    border-bottom: 2px solid var(--border-color);
+    color: var(--text-muted) !important;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+}
+
+.table td {
+    vertical-align: middle;
+    border-color: var(--border-color);
+    color: var(--text-main);
+}
+
+/* --- 11. อะนิเมชั่นและสถานะพิเศษ --- */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
+
+.updating {
+    animation: pulse 1.5s infinite;
+}
+
+.icon-circle {
+    background-color: var(--input-bg) !important;
+    color: var(--primary-green) !important;
+}
+
+#verifyBtn:disabled {
+    background-color: var(--text-muted) !important;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* --- 12. การรองรับหน้าจอเล็ก --- */
+@media (max-width: 768px) {
+    .header-nav {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .sensor-value {
+        font-size: 2.2rem !important;
+    }
+
+    .login-card, .stat-card {
+        padding: 1.5rem;
+    }
+
+    .menu-group {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+    }
+}
+
+/* --- 13. ตกแต่ง Scrollbar --- */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-color);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* --- ตกแต่งตารางรายงาน (Modern Custom Table) --- */
+.custom-table {
+    width: 100%;
+    background: transparent !important; /* ลบพื้นหลังสีขาว */
+    color: var(--text-main) !important;
+    border-collapse: separate;
+    border-spacing: 0 12px; /* เว้นระยะห่างระหว่างแถวแบบมินิมอล */
+}
+
+/* หัวตาราง */
+.custom-table thead th {
+    background-color: transparent !important;
+    border-bottom: 2px solid var(--border-color) !important;
+    color: var(--text-muted) !important;
+    padding: 15px;
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+}
+
+/* แถวข้อมูล */
+.custom-table tbody tr {
+    background: var(--input-bg) !important; /* ใช้สีเดียวกับช่องกรอกข้อมูลให้ดูเป็นธีมเดียวกัน */
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+}
+
+.custom-table td {
+    padding: 18px 15px;
+    border: none !important;
+    vertical-align: middle;
+}
+
+/* ทำให้แถวโค้งมน */
+.custom-table tbody tr td:first-child { border-radius: 15px 0 0 15px; }
+.custom-table tbody tr td:last-child { border-radius: 0 15px 15px 0; }
+
+/* เอฟเฟกต์เมื่อเอาเมาส์ไปชี้ */
+.custom-table tbody tr:hover {
+    transform: translateY(-3px);
+    filter: brightness(1.15);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* ส่วนแสดงข้อความ "ไม่พบข้อมูล" */
+.no-data-cell {
+    padding: 60px !important;
+    text-align: center;
+    color: var(--text-muted) !important;
+    background: transparent !important;
+    font-style: italic;
+}
+
+/* Badge สถานะแบบโปร่งแสง */
+.bg-success-soft {
+    background-color: rgba(40, 167, 69, 0.15) !important;
+    color: #5F8D5E !important;
+    border: 1px solid rgba(40, 167, 69, 0.2);
+    padding: 8px 16px !important;
+}
+
+.bg-secondary-soft {
+    background-color: rgba(113, 128, 150, 0.15) !important;
+    color: var(--text-muted) !important;
+    border: 1px solid rgba(113, 128, 150, 0.2);
+    padding: 8px 16px !important;
+}

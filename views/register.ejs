@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Smart Rice Bin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <div class="container py-5">
+        <div class="card p-5 mx-auto shadow-sm" style="max-width: 500px; border-radius: 25px;">
+            <div class="text-center mb-4">
+                <div class="icon-circle mb-3 mx-auto">
+                    <i class="fas fa-user-plus fa-2x text-success"></i>
+                </div>
+                <h5 class="fw-bold">ข้อมูลการลงทะเบียน</h5>
+            </div>
+
+            <div class="mb-3 text-start">
+                <label class="form-label small text-muted">ชื่อ-นามสกุล ผู้ใช้งาน</label>
+                <input type="text" id="regName" class="form-control border-0 bg-light p-3" placeholder="ระบุชื่อจริง-นามสกุล" style="border-radius: 12px;">
+            </div>
+
+            <div class="mb-3 text-start">
+                <label class="form-label small text-muted">เบอร์โทรศัพท์</label>
+                <input type="tel" id="regPhone" class="form-control border-0 bg-light p-3" placeholder="08x-xxx-xxxx" style="border-radius: 12px;">
+            </div>
+
+            <div class="mb-3 text-start">
+                <label class="form-label small text-muted">อีเมล (สำหรับเข้าสู่ระบบ)</label>
+                <input type="email" id="regEmail" class="form-control border-0 bg-light p-3" placeholder="example@mail.com" style="border-radius: 12px;">
+            </div>
+
+            <div class="mb-3 text-start">
+                <label class="form-label small text-muted">รหัสผ่าน (A-Z, a-z, 0-9)</label>
+                <input type="password" id="regPass" class="form-control border-0 bg-light p-3" placeholder="••••••••" style="border-radius: 12px;">
+                <small class="text-muted" style="font-size: 0.7rem;">* ขั้นต่ำ 8 ตัวอักษร มีพิมพ์ใหญ่ พิมพ์เล็ก และตัวเลข</small>
+            </div>
+
+            <div class="mb-3 text-start">
+                <label class="form-label small text-muted">Serial Number (รหัสถัง)</label>
+                <input type="text" id="regSerial" class="form-control border-0 bg-light p-3" placeholder="ตัวอย่าง: SRB-001" style="border-radius: 12px;">
+                <small class="text-muted mt-1 d-block" style="font-size: 0.75rem;">* รหัสนี้ใช้สำหรับเข้าสู่ระบบ Dashboard</small>
+            </div>
+
+            <button onclick="submitRegister()" id="btnSubmit" class="btn btn-success w-100 p-3 mt-3 shadow-sm" style="border-radius: 15px; background-color: #5F8D5E; border: none; font-weight: 500;">
+                <i class="fas fa-save me-2"></i> บันทึกและลงทะเบียน
+            </button>
+            
+            <div class="text-center mt-3">
+                <a href="/smartbin" class="text-muted small text-decoration-none">มีบัญชีแล้ว? เข้าสู่ระบบ</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCzVD8KRML-BNyvmqGMlyFmFxpg-VU0pqo",
+            authDomain: "iot-a8afd.firebaseapp.com",
+            databaseURL: "https://iot-a8afd-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "iot-a8afd",
+            storageBucket: "iot-a8afd.firebasestorage.app",
+            messagingSenderId: "895547899276",
+            appId: "1:895547899276:web:17131cbcc67a1de256eaa9"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function submitRegister() {
+            const name = document.getElementById("regName").value;
+            const phone = document.getElementById("regPhone").value;
+            const email = document.getElementById("regEmail").value;
+            const pass = document.getElementById("regPass").value;
+            const serial = document.getElementById("regSerial").value.trim();
+            const btn = document.getElementById("btnSubmit");
+
+            // 1. ตรวจสอบข้อมูลพื้นฐาน
+            if(!name || !phone || !email || !pass || !serial) {
+                alert("กรุณากรอกข้อมูลให้ครบทุกช่อง");
+                return;
+            }
+
+            // 2. ตรวจสอบรูปแบบรหัสผ่าน (A-Z, a-z, 0-9 และ 8 ตัวขึ้นไป)
+            const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
+            if(!passRegex.test(pass)) {
+                alert("รหัสผ่านไม่ตรงตามเงื่อนไข (ต้องมี 8 ตัวขึ้นไป ประกอบด้วย A-Z, a-z และ 0-9)");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "กำลังตรวจสอบ...";
+
+            // 3. ตรวจสอบ Serial ถังในระบบ
+            db.ref(`RegisteredBins/${serial}`).once("value").then((snapshot) => {
+                if (snapshot.exists()) {
+                    // หาก Serial มีอยู่แล้วในระบบ (อาจเป็นเจ้าของอื่น)
+                    alert("ขออภัย! Serial Number นี้ถูกลงทะเบียนไปแล้ว");
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-save me-2"></i> บันทึกและลงทะเบียน';
+                } else {
+                    // หากยังไม่มี ให้เข้าสู่กระบวนการสร้าง OTP และบันทึกข้อมูล
+                    generateOTPAndSave(name, phone, email, pass, serial);
+                }
+            }).catch(err => {
+                alert("เกิดข้อผิดพลาดในการตรวจสอบข้อมูล");
+                btn.disabled = false;
+            });
+        }
+
+        function generateOTPAndSave(name, phone, email, pass, serial) {
+            // สุ่ม OTP 6 หลัก
+            const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+            // บันทึกข้อมูลผู้ใช้ใหม่ลงในตาราง Users
+            const newUserRef = db.ref('Users').push();
+            newUserRef.set({
+                name: name,
+                email: email,
+                phone: phone,
+                serial: serial,
+                password: pass,
+                otp: otpCode,
+                isVerified: false, // ยังไม่ยืนยันจนกว่าจะกรอก OTP
+                createdAt: new Date().toLocaleString('th-TH')
+            }).then(() => {
+                alert("ลงทะเบียนเบื้องต้นสำเร็จ! รหัส OTP ยืนยันคือ: " + otpCode);
+                
+                // เก็บ ID ไว้เพื่อใช้ในหน้ายืนยัน
+                localStorage.setItem("pending_verify_id", newUserRef.key);
+                
+                // บันทึกข้อมูลเพื่อ Auto-fill ครั้งหน้า
+                localStorage.setItem("bin_user_email", email);
+                
+                window.location.href = "/verify-email";
+            }).catch(err => {
+                alert("บันทึกไม่สำเร็จ: " + err.message);
+                document.getElementById("btnSubmit").disabled = false;
+                document.getElementById("btnSubmit").innerText = "บันทึกและลงทะเบียน";
+            });
+        }
+    </script>
+</body>
+</html>
